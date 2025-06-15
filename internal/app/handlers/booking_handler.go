@@ -4,10 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gin-gonic/gin"
 	service "homestay.com/nguyenduy/internal/app/services"
 	"homestay.com/nguyenduy/internal/request"
-
-	"github.com/gin-gonic/gin"
 )
 
 type BookingHandler struct {
@@ -21,19 +20,18 @@ func NewBookingHandler(bookingService service.BookingService) *BookingHandler {
 }
 
 func (h *BookingHandler) CreateBooking(c *gin.Context) {
-	var req request.BookingRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var booking request.BookingRequest
+	if err := c.ShouldBindJSON(&booking); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	booking, err := h.bookingService.CreateBooking(&req)
-	if err != nil {
+	if err := h.bookingService.CreateBooking(&booking); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, booking)
+	c.JSON(http.StatusCreated, gin.H{"message": "Booking created successfully"})
 }
 
 func (h *BookingHandler) GetAllBookings(c *gin.Context) {
@@ -69,19 +67,18 @@ func (h *BookingHandler) UpdateBooking(c *gin.Context) {
 		return
 	}
 
-	var req request.BookingRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var booking request.BookingRequest
+	if err := c.ShouldBindJSON(&booking); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	booking, err := h.bookingService.UpdateBooking(uint(id), &req)
-	if err != nil {
+	if err := h.bookingService.UpdateBooking(uint(id), &booking); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, booking)
+	c.JSON(http.StatusOK, gin.H{"message": "Booking updated successfully"})
 }
 
 func (h *BookingHandler) DeleteBooking(c *gin.Context) {
@@ -91,8 +88,7 @@ func (h *BookingHandler) DeleteBooking(c *gin.Context) {
 		return
 	}
 
-	err = h.bookingService.DeleteBooking(uint(id))
-	if err != nil {
+	if err := h.bookingService.DeleteBooking(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

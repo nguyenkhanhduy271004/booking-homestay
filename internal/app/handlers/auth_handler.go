@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	service "homestay.com/nguyenduy/internal/app/services"
+	services "homestay.com/nguyenduy/internal/app/services"
 	utils "homestay.com/nguyenduy/internal/pkg"
 	"homestay.com/nguyenduy/internal/request"
 )
@@ -16,10 +16,10 @@ type AuthHandler interface {
 }
 
 type authHandler struct {
-	authService service.AuthService
+	authService services.AuthService
 }
 
-func NewAuthHandler(authService service.AuthService) AuthHandler {
+func NewAuthHandler(authService services.AuthService) AuthHandler {
 	return &authHandler{authService: authService}
 }
 

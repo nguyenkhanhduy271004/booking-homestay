@@ -8,8 +8,17 @@ import (
 	service "homestay.com/nguyenduy/internal/app/services"
 )
 
-func UploadHandler(w http.ResponseWriter, r *http.Request) (string, error) {
+type UploadHandler struct {
+	hotelService service.HotelService
+}
 
+func NewUploadHandler(hotelService service.HotelService) *UploadHandler {
+	return &UploadHandler{
+		hotelService: hotelService,
+	}
+}
+
+func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) (string, error) {
 	r.ParseMultipartForm(10 << 20)
 
 	file, handler, err := r.FormFile("file")
@@ -19,20 +28,28 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) (string, error) {
 	}
 	defer file.Close()
 
-	tempFile, err := os.CreateTemp("temp-images", handler.Filename)
-	if err != nil {
-		http.Error(w, "Temp file error", http.StatusInternalServerError)
-		return "", err
-	}
-	defer tempFile.Close()
-
-	io.Copy(tempFile, file)
-
-	url, err := service.UploadImage(tempFile.Name())
-	if err != nil {
-		http.Error(w, "Cloudinary upload error", http.StatusInternalServerError)
+	// Create uploads directory if it doesn't exist
+	uploadDir := "uploads"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		http.Error(w, "Failed to create upload directory", http.StatusInternalServerError)
 		return "", err
 	}
 
-	return url, nil
+	// Create a new file in the uploads directory
+	filePath := uploadDir + "/" + handler.Filename
+	dst, err := os.Create(filePath)
+	if err != nil {
+		http.Error(w, "Failed to create file", http.StatusInternalServerError)
+		return "", err
+	}
+	defer dst.Close()
+
+	// Copy the uploaded file to the destination file
+	if _, err := io.Copy(dst, file); err != nil {
+		http.Error(w, "Failed to copy file", http.StatusInternalServerError)
+		return "", err
+	}
+
+	// Return the relative path to the uploaded file
+	return filePath, nil
 }
