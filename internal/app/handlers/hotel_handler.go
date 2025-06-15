@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	service "homestay.com/nguyenduy/internal/app/services"
@@ -20,13 +21,29 @@ func NewHotelHandler(hotelService service.HotelService) *HotelHandler {
 }
 
 func (h *HotelHandler) CreateHotel(c *gin.Context) {
-	var hotel request.HotelRequest
-	if err := c.ShouldBindJSON(&hotel); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
 		return
 	}
 
-	if err := h.hotelService.CreateHotel(&hotel); err != nil {
+	file, header, err := c.Request.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Image is required"})
+		return
+	}
+	defer file.Close()
+
+	hotel := request.HotelRequest{
+		Name:    c.PostForm("name"),
+		Address: c.PostForm("address"),
+		Phone:   c.PostForm("phone"),
+		Email:   c.PostForm("email"),
+	}
+	hotel.CheckinTime, _ = time.Parse(time.RFC3339, c.PostForm("checkin_time"))
+	hotel.CheckoutTime, _ = time.Parse(time.RFC3339, c.PostForm("checkout_time"))
+	hotel.Stars, _ = strconv.Atoi(c.PostForm("stars"))
+
+	if err := h.hotelService.CreateHotel(&hotel, file, header.Filename); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
