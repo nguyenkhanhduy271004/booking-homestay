@@ -9,7 +9,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"homestay.com/nguyenduy/internal/app/model"
+	model "homestay.com/nguyenduy/internal/app/models"
 )
 
 func SetupDatabaseConnection() *gorm.DB {

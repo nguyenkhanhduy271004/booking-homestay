@@ -1,8 +1,8 @@
-package repository
+package repositories
 
 import (
 	"gorm.io/gorm"
-	"homestay.com/nguyenduy/internal/app/model"
+	model "homestay.com/nguyenduy/internal/app/models"
 )
 
 type UserRepository interface {

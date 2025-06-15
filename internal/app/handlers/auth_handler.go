@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"homestay.com/nguyenduy/internal/app/service"
+	service "homestay.com/nguyenduy/internal/app/services"
 	utils "homestay.com/nguyenduy/internal/pkg"
 	"homestay.com/nguyenduy/internal/request"
 )

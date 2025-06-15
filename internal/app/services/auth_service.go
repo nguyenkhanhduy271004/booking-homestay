@@ -1,4 +1,4 @@
-package service
+package services
 
 import (
 	"errors"
@@ -6,8 +6,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
-	"homestay.com/nguyenduy/internal/app/model"
-	"homestay.com/nguyenduy/internal/app/repository"
+	model "homestay.com/nguyenduy/internal/app/models"
+	repository "homestay.com/nguyenduy/internal/app/repositories"
 	"homestay.com/nguyenduy/internal/request"
 )
 
