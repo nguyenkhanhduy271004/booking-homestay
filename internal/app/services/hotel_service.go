@@ -1,19 +1,23 @@
 package services
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
-	"path/filepath"
+	"strings"
 
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	model "homestay.com/nguyenduy/internal/app/models"
 	repository "homestay.com/nguyenduy/internal/app/repositories"
+	"homestay.com/nguyenduy/internal/config"
 	"homestay.com/nguyenduy/internal/request"
 )
 
 type HotelService interface {
-	CreateHotel(hotel *request.HotelRequest, imageFile multipart.File, fileName string) error
+	CreateHotel(hotel *request.HotelRequest) error
 	GetAllHotels() ([]model.Hotel, error)
 	GetHotelByID(id uint) (*model.Hotel, error)
 	UpdateHotel(id uint, hotel *request.HotelRequest) error
@@ -30,38 +34,71 @@ func NewHotelService(hotelRepo repository.HotelRepository) HotelService {
 	}
 }
 
-func (s *hotelService) UploadImage(file multipart.File, fileName string) (string, error) {
-	// Create uploads directory if it doesn't exist
-	uploadDir := "uploads"
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create upload directory: %v", err)
+func (s *hotelService) validateHotel(hotel *request.HotelRequest) error {
+	if hotel.Name == "" {
+		return errors.New("hotel name is required")
 	}
-
-	// Create a new file in the uploads directory
-	filePath := filepath.Join(uploadDir, fileName)
-	dst, err := os.Create(filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to create file: %v", err)
+	if hotel.Address == "" {
+		return errors.New("hotel address is required")
 	}
-	defer dst.Close()
-
-	// Copy the uploaded file to the destination file
-	if _, err := io.Copy(dst, file); err != nil {
-		return "", fmt.Errorf("failed to copy file: %v", err)
+	if hotel.Phone == "" {
+		return errors.New("hotel phone is required")
 	}
-
-	// Return the relative path to the uploaded file
-	return filePath, nil
+	if hotel.Email == "" {
+		return errors.New("hotel email is required")
+	}
+	if !strings.Contains(hotel.Email, "@") {
+		return errors.New("invalid email format")
+	}
+	if hotel.Stars < 1 || hotel.Stars > 5 {
+		return errors.New("stars must be between 1 and 5")
+	}
+	if hotel.CheckinTime.IsZero() {
+		return errors.New("check-in time is required")
+	}
+	if hotel.CheckoutTime.IsZero() {
+		return errors.New("check-out time is required")
+	}
+	if hotel.CheckoutTime.Before(hotel.CheckinTime) {
+		return errors.New("check-out time must be after check-in time")
+	}
+	return nil
 }
 
-func (s *hotelService) CreateHotel(hotel *request.HotelRequest, imageFile multipart.File, fileName string) error {
-	imageURL, err := s.UploadImage(imageFile, fileName)
+func (s *hotelService) UploadImage(file multipart.File, fileName string) (string, error) {
+	tempFile, err := os.CreateTemp("", fileName)
 	if err != nil {
-		return err
+		return "", fmt.Errorf("failed to create temp file: %v", err)
+	}
+	defer func() {
+		tempFile.Close()
+		os.Remove(tempFile.Name())
+	}()
+
+	if _, err := io.Copy(tempFile, file); err != nil {
+		return "", fmt.Errorf("failed to write temp file: %v", err)
 	}
 
-	hotel.Image = imageURL
+	cld, err := config.InitCloudinary()
+	if err != nil {
+		return "", fmt.Errorf("cloudinary init error: %v", err)
+	}
 
+	resp, err := cld.Upload.Upload(context.Background(), tempFile.Name(), uploader.UploadParams{
+		PublicID: fileName,
+		Folder:   "hotels",
+	})
+	if err != nil {
+		return "", fmt.Errorf("cloudinary upload error: %v", err)
+	}
+
+	return resp.SecureURL, nil
+}
+
+func (s *hotelService) CreateHotel(hotel *request.HotelRequest) error {
+	if err := s.validateHotel(hotel); err != nil {
+		return err
+	}
 	return s.hotelRepo.Create(hotel)
 }
 
@@ -70,13 +107,25 @@ func (s *hotelService) GetAllHotels() ([]model.Hotel, error) {
 }
 
 func (s *hotelService) GetHotelByID(id uint) (*model.Hotel, error) {
+	if id == 0 {
+		return nil, errors.New("invalid hotel ID")
+	}
 	return s.hotelRepo.GetByID(id)
 }
 
 func (s *hotelService) UpdateHotel(id uint, hotel *request.HotelRequest) error {
+	if id == 0 {
+		return errors.New("invalid hotel ID")
+	}
+	if err := s.validateHotel(hotel); err != nil {
+		return err
+	}
 	return s.hotelRepo.Update(id, hotel)
 }
 
 func (s *hotelService) DeleteHotel(id uint) error {
+	if id == 0 {
+		return errors.New("invalid hotel ID")
+	}
 	return s.hotelRepo.Delete(id)
 }

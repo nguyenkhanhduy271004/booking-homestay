@@ -3,112 +3,111 @@ package handlers
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	service "homestay.com/nguyenduy/internal/app/services"
+	"homestay.com/nguyenduy/internal/app/services"
+	"homestay.com/nguyenduy/internal/helper"
 	"homestay.com/nguyenduy/internal/request"
 )
 
 type HotelHandler struct {
-	hotelService service.HotelService
+	hotelService services.HotelService
 }
 
-func NewHotelHandler(hotelService service.HotelService) *HotelHandler {
+func NewHotelHandler(hotelService services.HotelService) *HotelHandler {
 	return &HotelHandler{
 		hotelService: hotelService,
 	}
 }
 
 func (h *HotelHandler) CreateHotel(c *gin.Context) {
-	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
+	var hotelRequest request.HotelRequest
+	if err := c.ShouldBindJSON(&hotelRequest); err != nil {
+		response := helper.BuildErrorResponse("Invalid request data", err.Error(), nil)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	file, header, err := c.Request.FormFile("image")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Image is required"})
-		return
-	}
-	defer file.Close()
-
-	hotel := request.HotelRequest{
-		Name:    c.PostForm("name"),
-		Address: c.PostForm("address"),
-		Phone:   c.PostForm("phone"),
-		Email:   c.PostForm("email"),
-	}
-	hotel.CheckinTime, _ = time.Parse(time.RFC3339, c.PostForm("checkin_time"))
-	hotel.CheckoutTime, _ = time.Parse(time.RFC3339, c.PostForm("checkout_time"))
-	hotel.Stars, _ = strconv.Atoi(c.PostForm("stars"))
-
-	if err := h.hotelService.CreateHotel(&hotel, file, header.Filename); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.hotelService.CreateHotel(&hotelRequest); err != nil {
+		response := helper.BuildErrorResponse("Failed to create hotel", err.Error(), nil)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Hotel created successfully"})
+	response := helper.BuildResponse(true, "Hotel created successfully", nil)
+	c.JSON(http.StatusCreated, response)
 }
 
 func (h *HotelHandler) GetAllHotels(c *gin.Context) {
 	hotels, err := h.hotelService.GetAllHotels()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response := helper.BuildErrorResponse("Failed to fetch hotels", err.Error(), nil)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
-	c.JSON(http.StatusOK, hotels)
+	response := helper.BuildResponse(true, "Hotels fetched successfully", hotels)
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *HotelHandler) GetHotelByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hotel ID"})
+		response := helper.BuildErrorResponse("Invalid hotel ID", err.Error(), nil)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	hotel, err := h.hotelService.GetHotelByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Hotel not found"})
+		response := helper.BuildErrorResponse("Hotel not found", err.Error(), nil)
+		c.JSON(http.StatusNotFound, response)
 		return
 	}
 
-	c.JSON(http.StatusOK, hotel)
+	response := helper.BuildResponse(true, "Hotel fetched successfully", hotel)
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *HotelHandler) UpdateHotel(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hotel ID"})
+		response := helper.BuildErrorResponse("Invalid hotel ID", err.Error(), nil)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	var hotel request.HotelRequest
-	if err := c.ShouldBindJSON(&hotel); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var hotelRequest request.HotelRequest
+	if err := c.ShouldBindJSON(&hotelRequest); err != nil {
+		response := helper.BuildErrorResponse("Invalid request data", err.Error(), nil)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	if err := h.hotelService.UpdateHotel(uint(id), &hotel); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.hotelService.UpdateHotel(uint(id), &hotelRequest); err != nil {
+		response := helper.BuildErrorResponse("Failed to update hotel", err.Error(), nil)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Hotel updated successfully"})
+	response := helper.BuildResponse(true, "Hotel updated successfully", nil)
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *HotelHandler) DeleteHotel(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hotel ID"})
+		response := helper.BuildErrorResponse("Invalid hotel ID", err.Error(), nil)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
 	if err := h.hotelService.DeleteHotel(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response := helper.BuildErrorResponse("Failed to delete hotel", err.Error(), nil)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Hotel deleted successfully"})
+	response := helper.BuildResponse(true, "Hotel deleted successfully", nil)
+	c.JSON(http.StatusOK, response)
 }

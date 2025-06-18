@@ -5,93 +5,148 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	service "homestay.com/nguyenduy/internal/app/services"
+	"homestay.com/nguyenduy/internal/app/services"
 	"homestay.com/nguyenduy/internal/request"
 )
 
 type RoomHandler struct {
-	roomService service.RoomService
+	roomService services.RoomService
 }
 
-func NewRoomHandler(roomService service.RoomService) *RoomHandler {
+func NewRoomHandler(roomService services.RoomService) *RoomHandler {
 	return &RoomHandler{
 		roomService: roomService,
 	}
 }
 
 func (h *RoomHandler) CreateRoom(c *gin.Context) {
-	var room request.RoomRequest
-	if err := c.ShouldBindJSON(&room); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var roomRequest request.RoomRequest
+	if err := c.ShouldBindJSON(&roomRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid request data",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	if err := h.roomService.CreateRoom(&room); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.roomService.CreateRoom(&roomRequest); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Failed to create room",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Room created successfully"})
+	c.JSON(http.StatusCreated, gin.H{
+		"status":  "success",
+		"message": "Room created successfully",
+	})
 }
 
 func (h *RoomHandler) GetAllRooms(c *gin.Context) {
 	rooms, err := h.roomService.GetAllRooms()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Failed to fetch rooms",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, rooms)
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   rooms,
+	})
 }
 
 func (h *RoomHandler) GetRoomByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid room ID"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid room ID",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	room, err := h.roomService.GetRoomByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Room not found"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": "Room not found",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, room)
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   room,
+	})
 }
 
 func (h *RoomHandler) UpdateRoom(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid room ID"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid room ID",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	var room request.RoomRequest
-	if err := c.ShouldBindJSON(&room); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var roomRequest request.RoomRequest
+	if err := c.ShouldBindJSON(&roomRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid request data",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	if err := h.roomService.UpdateRoom(uint(id), &room); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.roomService.UpdateRoom(uint(id), &roomRequest); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Failed to update room",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Room updated successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Room updated successfully",
+	})
 }
 
 func (h *RoomHandler) DeleteRoom(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid room ID"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid room ID",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	if err := h.roomService.DeleteRoom(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Failed to delete room",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Room deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Room deleted successfully",
+	})
 }

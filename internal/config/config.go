@@ -51,7 +51,7 @@ func SetupDatabaseConnection() *gorm.DB {
 
 	log.Println("Successfully connected to database!")
 
-	if err := db.AutoMigrate(&model.User{}, &model.Hotel{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.Hotel{}, &model.Role{}, &model.Permission{}, &model.Staff{}, &model.Booking{}, &model.Room{}, &model.Payment{}, &model.Guest{}, &model.RoomType{}); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
 	log.Println("Database migration completed!")

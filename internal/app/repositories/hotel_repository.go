@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"errors"
+
 	"gorm.io/gorm"
 	model "homestay.com/nguyenduy/internal/app/models"
 	"homestay.com/nguyenduy/internal/request"
@@ -38,7 +40,10 @@ func (r *hotelRepository) Create(hotel *request.HotelRequest) error {
 
 func (r *hotelRepository) GetAll() ([]model.Hotel, error) {
 	var hotels []model.Hotel
-	if err := r.db.Find(&hotels).Error; err != nil {
+	if err := r.db.Preload("Staffs").
+		Preload("Staffs.User").
+		Preload("Staffs.Role").
+		Find(&hotels).Error; err != nil {
 		return nil, err
 	}
 	return hotels, nil
@@ -46,7 +51,10 @@ func (r *hotelRepository) GetAll() ([]model.Hotel, error) {
 
 func (r *hotelRepository) GetByID(id uint) (*model.Hotel, error) {
 	var hotel model.Hotel
-	if err := r.db.First(&hotel, id).Error; err != nil {
+	if err := r.db.Preload("Staffs").
+		Preload("Staffs.User").
+		Preload("Staffs.Role").
+		First(&hotel, id).Error; err != nil {
 		return nil, err
 	}
 	return &hotel, nil
@@ -66,5 +74,22 @@ func (r *hotelRepository) Update(id uint, hotel *request.HotelRequest) error {
 }
 
 func (r *hotelRepository) Delete(id uint) error {
+	// Check if hotel has any staff
+	var count int64
+	if err := r.db.Model(&model.Staff{}).Where("hotel_id = ?", id).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("cannot delete hotel with existing staff")
+	}
+
+	// Check if hotel has any rooms
+	if err := r.db.Model(&model.Room{}).Where("hotel_id = ?", id).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("cannot delete hotel with existing rooms")
+	}
+
 	return r.db.Delete(&model.Hotel{}, id).Error
 }
