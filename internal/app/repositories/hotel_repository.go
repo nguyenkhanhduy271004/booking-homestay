@@ -5,7 +5,7 @@ import (
 
 	"gorm.io/gorm"
 	model "homestay.com/nguyenduy/internal/app/models"
-	"homestay.com/nguyenduy/internal/request"
+	"homestay.com/nguyenduy/internal/dtos/request"
 )
 
 type HotelRepository interface {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	services "homestay.com/nguyenduy/internal/app/services"
+	"homestay.com/nguyenduy/internal/dtos/request"
 	utils "homestay.com/nguyenduy/internal/pkg"
-	"homestay.com/nguyenduy/internal/request"
 )
 
 type AuthHandler interface {

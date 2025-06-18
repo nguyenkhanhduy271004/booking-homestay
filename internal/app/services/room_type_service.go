@@ -1,15 +1,16 @@
 package services
 
 import (
-	model "homestay.com/nguyenduy/internal/app/models"
 	repository "homestay.com/nguyenduy/internal/app/repositories"
-	"homestay.com/nguyenduy/internal/request"
+	"homestay.com/nguyenduy/internal/converter"
+	"homestay.com/nguyenduy/internal/dtos/request"
+	"homestay.com/nguyenduy/internal/dtos/response"
 )
 
 type RoomTypeService interface {
 	CreateRoomType(roomType *request.RoomTypeRequest) error
-	GetAllRoomTypes() ([]model.RoomType, error)
-	GetRoomTypeByID(id uint) (*model.RoomType, error)
+	GetAllRoomTypes() ([]response.RoomTypeResponse, error)
+	GetRoomTypeByID(id uint) (*response.RoomTypeResponse, error)
 	UpdateRoomType(id uint, roomType *request.RoomTypeRequest) error
 	DeleteRoomType(id uint) error
 }
@@ -28,12 +29,27 @@ func (s *roomTypeService) CreateRoomType(roomType *request.RoomTypeRequest) erro
 	return s.roomTypeRepo.Create(roomType)
 }
 
-func (s *roomTypeService) GetAllRoomTypes() ([]model.RoomType, error) {
-	return s.roomTypeRepo.GetAll()
+func (s *roomTypeService) GetAllRoomTypes() ([]response.RoomTypeResponse, error) {
+	roomTypes, err := s.roomTypeRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	roomTypeDTOs := make([]response.RoomTypeResponse, len(roomTypes))
+	for i, roomType := range roomTypes {
+		roomTypeDTOs[i] = converter.ToRoomTypeDTO(&roomType)
+	}
+	return roomTypeDTOs, nil
 }
 
-func (s *roomTypeService) GetRoomTypeByID(id uint) (*model.RoomType, error) {
-	return s.roomTypeRepo.GetByID(id)
+func (s *roomTypeService) GetRoomTypeByID(id uint) (*response.RoomTypeResponse, error) {
+	roomType, err := s.roomTypeRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	roomTypeDTO := converter.ToRoomTypeDTO(roomType)
+	return &roomTypeDTO, nil
 }
 
 func (s *roomTypeService) UpdateRoomType(id uint, roomType *request.RoomTypeRequest) error {

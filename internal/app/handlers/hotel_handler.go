@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"homestay.com/nguyenduy/internal/app/services"
+	"homestay.com/nguyenduy/internal/dtos/request"
 	"homestay.com/nguyenduy/internal/helper"
-	"homestay.com/nguyenduy/internal/request"
 )
 
 type HotelHandler struct {

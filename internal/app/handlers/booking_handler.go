@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	service "homestay.com/nguyenduy/internal/app/services"
-	"homestay.com/nguyenduy/internal/request"
+	"homestay.com/nguyenduy/internal/dtos/request"
 )
 
 type BookingHandler struct {

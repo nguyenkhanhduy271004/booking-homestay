@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	model "homestay.com/nguyenduy/internal/app/models"
 	repository "homestay.com/nguyenduy/internal/app/repositories"
-	"homestay.com/nguyenduy/internal/request"
+	"homestay.com/nguyenduy/internal/dtos/request"
 )
 
 type AuthService interface {

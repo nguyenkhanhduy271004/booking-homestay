@@ -7,7 +7,7 @@ import (
 
 	model "homestay.com/nguyenduy/internal/app/models"
 	"homestay.com/nguyenduy/internal/app/repositories"
-	"homestay.com/nguyenduy/internal/request"
+	"homestay.com/nguyenduy/internal/dtos/request"
 )
 
 type StaffService interface {

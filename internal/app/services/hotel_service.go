@@ -10,16 +10,17 @@ import (
 	"strings"
 
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
-	model "homestay.com/nguyenduy/internal/app/models"
 	repository "homestay.com/nguyenduy/internal/app/repositories"
 	"homestay.com/nguyenduy/internal/config"
-	"homestay.com/nguyenduy/internal/request"
+	"homestay.com/nguyenduy/internal/converter"
+	"homestay.com/nguyenduy/internal/dtos/request"
+	"homestay.com/nguyenduy/internal/dtos/response"
 )
 
 type HotelService interface {
 	CreateHotel(hotel *request.HotelRequest) error
-	GetAllHotels() ([]model.Hotel, error)
-	GetHotelByID(id uint) (*model.Hotel, error)
+	GetAllHotels() ([]response.HotelResponse, error)
+	GetHotelByID(id uint) (*response.HotelResponse, error)
 	UpdateHotel(id uint, hotel *request.HotelRequest) error
 	DeleteHotel(id uint) error
 }
@@ -102,15 +103,31 @@ func (s *hotelService) CreateHotel(hotel *request.HotelRequest) error {
 	return s.hotelRepo.Create(hotel)
 }
 
-func (s *hotelService) GetAllHotels() ([]model.Hotel, error) {
-	return s.hotelRepo.GetAll()
+func (s *hotelService) GetAllHotels() ([]response.HotelResponse, error) {
+	hotels, err := s.hotelRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	hotelDTOs := make([]response.HotelResponse, len(hotels))
+	for i, hotel := range hotels {
+		hotelDTOs[i] = converter.ToHotelDTO(hotel)
+	}
+	return hotelDTOs, nil
 }
 
-func (s *hotelService) GetHotelByID(id uint) (*model.Hotel, error) {
+func (s *hotelService) GetHotelByID(id uint) (*response.HotelResponse, error) {
 	if id == 0 {
 		return nil, errors.New("invalid hotel ID")
 	}
-	return s.hotelRepo.GetByID(id)
+
+	hotel, err := s.hotelRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	hotelDTO := converter.ToHotelDTO(*hotel)
+	return &hotelDTO, nil
 }
 
 func (s *hotelService) UpdateHotel(id uint, hotel *request.HotelRequest) error {
