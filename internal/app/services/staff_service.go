@@ -5,15 +5,16 @@ import (
 	"strings"
 	"time"
 
-	model "homestay.com/nguyenduy/internal/app/models"
 	"homestay.com/nguyenduy/internal/app/repositories"
+	"homestay.com/nguyenduy/internal/converter"
 	"homestay.com/nguyenduy/internal/dtos/request"
+	"homestay.com/nguyenduy/internal/dtos/response"
 )
 
 type StaffService interface {
 	CreateStaff(staff *request.StaffRequest) error
-	GetAllStaff() ([]model.Staff, error)
-	GetStaffByID(id uint) (*model.Staff, error)
+	GetAllStaff() ([]response.StaffResponse, error)
+	GetStaffByID(id uint) (*response.StaffResponse, error)
 	UpdateStaff(id uint, staff *request.StaffRequest) error
 	DeleteStaff(id uint) error
 }
@@ -42,7 +43,6 @@ func (s *staffService) validateStaff(staff *request.StaffRequest) error {
 		return errors.New("salary cannot be negative")
 	}
 	if staff.Email != "" {
-		// Basic email validation
 		if !strings.Contains(staff.Email, "@") {
 			return errors.New("invalid email format")
 		}
@@ -55,12 +55,10 @@ func (s *staffService) CreateStaff(staff *request.StaffRequest) error {
 		return err
 	}
 
-	// Set hire date to current time if not provided
 	if staff.HireDate.IsZero() {
 		staff.HireDate = time.Now()
 	}
 
-	// Set a default date of birth if not provided (e.g., 18 years ago)
 	if staff.DateOfBirth.IsZero() {
 		staff.DateOfBirth = time.Now().AddDate(-18, 0, 0)
 	}
@@ -68,15 +66,36 @@ func (s *staffService) CreateStaff(staff *request.StaffRequest) error {
 	return s.staffRepo.Create(staff)
 }
 
-func (s *staffService) GetAllStaff() ([]model.Staff, error) {
-	return s.staffRepo.GetAll()
+func (s *staffService) GetAllStaff() ([]response.StaffResponse, error) {
+	staffs, err := s.staffRepo.GetAll()
+
+	if err != nil {
+		return nil, err
+	}
+
+	staffDtos := make([]response.StaffResponse, len(staffs))
+
+	for i, staff := range staffs {
+		staffDtos[i] = converter.ToStaffDTO(&staff)
+	}
+
+	return staffDtos, nil
 }
 
-func (s *staffService) GetStaffByID(id uint) (*model.Staff, error) {
+func (s *staffService) GetStaffByID(id uint) (*response.StaffResponse, error) {
 	if id == 0 {
 		return nil, errors.New("invalid staff ID")
 	}
-	return s.staffRepo.GetByID(id)
+
+	staff, err := s.staffRepo.GetByID(id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	staffDto := converter.ToStaffDTO(staff)
+
+	return &staffDto, nil
 }
 
 func (s *staffService) UpdateStaff(id uint, staff *request.StaffRequest) error {
@@ -88,12 +107,10 @@ func (s *staffService) UpdateStaff(id uint, staff *request.StaffRequest) error {
 		return err
 	}
 
-	// Set hire date to current time if not provided
 	if staff.HireDate.IsZero() {
 		staff.HireDate = time.Now()
 	}
 
-	// Set a default date of birth if not provided (e.g., 18 years ago)
 	if staff.DateOfBirth.IsZero() {
 		staff.DateOfBirth = time.Now().AddDate(-18, 0, 0)
 	}
