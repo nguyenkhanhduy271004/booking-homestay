@@ -12,7 +12,10 @@ import (
 func InitRoute(db *gorm.DB) *gin.Engine {
 	router := gin.Default()
 	router.Static("/uploads", "./uploads")
-	router.Use(middlewares.CORSMiddleware(), middlewares.RateLimitingMiddleware())
+	router.Use(
+		middlewares.CORSMiddleware(),
+		middlewares.LoggerMiddleware(),
+		middlewares.RateLimitingMiddleware())
 	go middlewares.CleanUpClients()
 
 	userRepository := repository.NewUserRepository(db)
