@@ -20,6 +20,4 @@ type Staff struct {
 	Phone       string    `json:"phone"`
 	Email       string    `json:"email"`
 	HireDate    time.Time `json:"hire_date"`
-	RoleID      uint      `json:"role_id"`
-	Role        Role      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"role"`
 }

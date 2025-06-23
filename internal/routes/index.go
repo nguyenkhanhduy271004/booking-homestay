@@ -4,51 +4,60 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"homestay.com/nguyenduy/internal/app/handlers"
-	repository "homestay.com/nguyenduy/internal/app/repositories"
-	service "homestay.com/nguyenduy/internal/app/services"
+	"homestay.com/nguyenduy/internal/app/repositories"
+	"homestay.com/nguyenduy/internal/app/services"
 	"homestay.com/nguyenduy/internal/middlewares"
 )
 
 func InitRoute(db *gorm.DB) *gin.Engine {
 	router := gin.Default()
 	router.Static("/uploads", "./uploads")
+
 	router.Use(
 		middlewares.CORSMiddleware(),
 		middlewares.LoggerMiddleware(),
-		middlewares.RateLimitingMiddleware())
+		middlewares.ApiKeyMiddleware(),
+		middlewares.RateLimitingMiddleware(),
+	)
 	go middlewares.CleanUpClients()
 
-	userRepository := repository.NewUserRepository(db)
-	authService := service.NewAuthService(userRepository)
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(
+		services.NewAuthService(repositories.NewUserRepository(db), repositories.NewRoleRepository(db)),
+	)
 
-	hotelRepository := repository.NewHotelRepository(db)
-	hotelService := service.NewHotelService(hotelRepository)
-	hotelHandler := handlers.NewHotelHandler(hotelService)
+	hotelHandler := handlers.NewHotelHandler(
+		services.NewHotelService(repositories.NewHotelRepository(db)),
+	)
 
-	roomRepository := repository.NewRoomRepository(db)
-	roomService := service.NewRoomService(roomRepository)
-	roomHandler := handlers.NewRoomHandler(roomService)
+	roomHandler := handlers.NewRoomHandler(
+		services.NewRoomService(repositories.NewRoomRepository(db)),
+	)
 
-	roomTypeRepository := repository.NewRoomTypeRepository(db)
-	roomTypeService := service.NewRoomTypeService(roomTypeRepository)
-	roomTypeHandler := handlers.NewRoomTypeHandler(roomTypeService)
+	roomTypeHandler := handlers.NewRoomTypeHandler(
+		services.NewRoomTypeService(repositories.NewRoomTypeRepository(db)),
+	)
 
-	guestRepository := repository.NewGuestRepository(db)
-	guestService := service.NewGuestService(guestRepository)
-	guestHandler := handlers.NewGuestHandler(guestService)
+	guestHandler := handlers.NewGuestHandler(
+		services.NewGuestService(repositories.NewGuestRepository(db)),
+	)
 
-	paymentRepository := repository.NewPaymentRepository(db)
-	paymentService := service.NewPaymentService(paymentRepository)
-	paymentHandler := handlers.NewPaymentHandler(paymentService)
+	paymentHandler := handlers.NewPaymentHandler(
+		services.NewPaymentService(repositories.NewPaymentRepository(db)),
+	)
 
-	bookingRepository := repository.NewBookingRepository(db)
-	bookingService := service.NewBookingService(bookingRepository)
-	bookingHandler := handlers.NewBookingHandler(bookingService)
+	bookingHandler := handlers.NewBookingHandler(
+		services.NewBookingService(repositories.NewBookingRepository(db)),
+	)
 
-	staffRepository := repository.NewStaffRepository(db, hotelRepository, userRepository)
-	staffService := service.NewStaffService(staffRepository)
-	staffHandler := handlers.NewStaffHandler(staffService)
+	staffHandler := handlers.NewStaffHandler(
+		services.NewStaffService(
+			repositories.NewStaffRepository(
+				db,
+				repositories.NewHotelRepository(db),
+				repositories.NewUserRepository(db),
+			),
+		),
+	)
 
 	authRoutes := router.Group("/api/auth")
 	{
@@ -56,92 +65,55 @@ func InitRoute(db *gorm.DB) *gin.Engine {
 		authRoutes.POST("/login", authHandler.Login)
 	}
 
-	hotelRoutesPublic := router.Group("/api/hotels")
-	{
-		hotelRoutesPublic.GET("", hotelHandler.GetAllHotels)
-		hotelRoutesPublic.GET(":id", hotelHandler.GetHotelByID)
+	publicRoutes := []struct {
+		route   string
+		handler interface{}
+	}{
+		{"/api/hotels", hotelHandler},
+		{"/api/rooms", roomHandler},
+		{"/api/room-types", roomTypeHandler},
+		{"/api/guests", guestHandler},
+		{"/api/payments", paymentHandler},
+		{"/api/bookings", bookingHandler},
 	}
 
-	roomRoutesPublic := router.Group("/api/rooms")
-	{
-		roomRoutesPublic.GET("", roomHandler.GetAllRooms)
-		roomRoutesPublic.GET(":id", roomHandler.GetRoomByID)
-	}
-
-	roomTypeRoutesPublic := router.Group("/api/room-types")
-	{
-		roomTypeRoutesPublic.GET("", roomTypeHandler.GetAllRoomTypes)
-		roomTypeRoutesPublic.GET(":id", roomTypeHandler.GetRoomTypeByID)
-	}
-
-	guestRoutesPublic := router.Group("/api/guests")
-	{
-		guestRoutesPublic.GET("", guestHandler.GetAllGuests)
-		guestRoutesPublic.GET(":id", guestHandler.GetGuestByID)
-	}
-
-	paymentRoutesPublic := router.Group("/api/payments")
-	{
-		paymentRoutesPublic.GET("", paymentHandler.GetAllPayments)
-		paymentRoutesPublic.GET(":id", paymentHandler.GetPaymentByID)
-	}
-
-	bookingRoutesPublic := router.Group("/api/bookings")
-	{
-		bookingRoutesPublic.GET("", bookingHandler.GetAllBookings)
-		bookingRoutesPublic.GET(":id", bookingHandler.GetBookingByID)
-	}
-
-	protectedRoutes := router.Group("/api")
-	protectedRoutes.Use(middlewares.CheckJwt())
-	{
-		protectedRoutes.GET("/profile", authHandler.Profile)
-
-		hotelRoutes := protectedRoutes.Group("/hotels")
-		{
-			hotelRoutes.POST("", hotelHandler.CreateHotel)
-			hotelRoutes.PUT(":id", hotelHandler.UpdateHotel)
-			hotelRoutes.DELETE(":id", hotelHandler.DeleteHotel)
-		}
-
-		roomRoutes := protectedRoutes.Group("/rooms")
-		{
-			roomRoutes.POST("", roomHandler.CreateRoom)
-			roomRoutes.PUT(":id", roomHandler.UpdateRoom)
-			roomRoutes.DELETE(":id", roomHandler.DeleteRoom)
-		}
-
-		roomTypeRoutes := protectedRoutes.Group("/room-types")
-		{
-			roomTypeRoutes.POST("", roomTypeHandler.CreateRoomType)
-			roomTypeRoutes.PUT(":id", roomTypeHandler.UpdateRoomType)
-			roomTypeRoutes.DELETE(":id", roomTypeHandler.DeleteRoomType)
-		}
-
-		guestRoutes := protectedRoutes.Group("/guests")
-		{
-			guestRoutes.POST("", guestHandler.CreateGuest)
-			guestRoutes.PUT(":id", guestHandler.UpdateGuest)
-			guestRoutes.DELETE(":id", guestHandler.DeleteGuest)
-		}
-
-		paymentRoutes := protectedRoutes.Group("/payments")
-		{
-			paymentRoutes.POST("", paymentHandler.CreatePayment)
-			paymentRoutes.PUT(":id", paymentHandler.UpdatePayment)
-			paymentRoutes.DELETE(":id", paymentHandler.DeletePayment)
-		}
-
-		bookingRoutes := protectedRoutes.Group("/bookings")
-		{
-			bookingRoutes.POST("", bookingHandler.CreateBooking)
-			bookingRoutes.PUT(":id", bookingHandler.UpdateBooking)
-			bookingRoutes.DELETE(":id", bookingHandler.DeleteBooking)
+	for _, r := range publicRoutes {
+		group := router.Group(r.route)
+		switch h := r.handler.(type) {
+		case *handlers.HotelHandler:
+			group.GET("", h.GetAllHotels)
+			group.GET(":id", h.GetHotelByID)
+		case *handlers.RoomHandler:
+			group.GET("", h.GetAllRooms)
+			group.GET(":id", h.GetRoomByID)
+		case *handlers.RoomTypeHandler:
+			group.GET("", h.GetAllRoomTypes)
+			group.GET(":id", h.GetRoomTypeByID)
+		case *handlers.GuestHandler:
+			group.GET("", h.GetAllGuests)
+			group.GET(":id", h.GetGuestByID)
+		case *handlers.PaymentHandler:
+			group.GET("", h.GetAllPayments)
+			group.GET(":id", h.GetPaymentByID)
+		case *handlers.BookingHandler:
+			group.GET("", h.GetAllBookings)
+			group.GET(":id", h.GetBookingByID)
 		}
 	}
 
-	staffRoutes := router.Group("/api/staffs")
-	staffRoutes.Use(middlewares.CheckJwt())
+	protected := router.Group("/api", middlewares.CheckJwt(), middlewares.IsAdmin())
+	{
+		protected.GET("/profile", authHandler.Profile)
+
+		registerCRUDRoutes(protected.Group("/hotels"), hotelHandler)
+		registerCRUDRoutes(protected.Group("/rooms"), roomHandler)
+		registerCRUDRoutes(protected.Group("/room-types"), roomTypeHandler)
+		registerCRUDRoutes(protected.Group("/guests"), guestHandler)
+		registerCRUDRoutes(protected.Group("/payments"), paymentHandler)
+		registerCRUDRoutes(protected.Group("/bookings"), bookingHandler)
+	}
+
+	staffRoutes := router.Group("/api/staffs", middlewares.CheckJwt(), middlewares.IsStaff())
 	{
 		staffRoutes.POST("", staffHandler.CreateStaff)
 		staffRoutes.GET("", staffHandler.GetAllStaff)
@@ -151,4 +123,33 @@ func InitRoute(db *gorm.DB) *gin.Engine {
 	}
 
 	return router
+}
+
+func registerCRUDRoutes(group *gin.RouterGroup, handler interface{}) {
+	switch h := handler.(type) {
+	case *handlers.HotelHandler:
+		group.POST("", h.CreateHotel)
+		group.PUT(":id", h.UpdateHotel)
+		group.DELETE(":id", h.DeleteHotel)
+	case *handlers.RoomHandler:
+		group.POST("", h.CreateRoom)
+		group.PUT(":id", h.UpdateRoom)
+		group.DELETE(":id", h.DeleteRoom)
+	case *handlers.RoomTypeHandler:
+		group.POST("", h.CreateRoomType)
+		group.PUT(":id", h.UpdateRoomType)
+		group.DELETE(":id", h.DeleteRoomType)
+	case *handlers.GuestHandler:
+		group.POST("", h.CreateGuest)
+		group.PUT(":id", h.UpdateGuest)
+		group.DELETE(":id", h.DeleteGuest)
+	case *handlers.PaymentHandler:
+		group.POST("", h.CreatePayment)
+		group.PUT(":id", h.UpdatePayment)
+		group.DELETE(":id", h.DeletePayment)
+	case *handlers.BookingHandler:
+		group.POST("", h.CreateBooking)
+		group.PUT(":id", h.UpdateBooking)
+		group.DELETE(":id", h.DeleteBooking)
+	}
 }

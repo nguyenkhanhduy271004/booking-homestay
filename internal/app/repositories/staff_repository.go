@@ -35,7 +35,6 @@ func (r *staffRepository) Create(staff *request.StaffRequest) error {
 		return err
 	}
 
-	// Check if role exists
 	var role model.Role
 	if err := r.db.First(&role, staff.RoleID).Error; err != nil {
 		return err
@@ -54,8 +53,6 @@ func (r *staffRepository) Create(staff *request.StaffRequest) error {
 		Phone:       staff.Phone,
 		Email:       staff.Email,
 		HireDate:    staff.HireDate,
-		RoleID:      staff.RoleID,
-		Role:        role,
 	}
 	return r.db.Create(staffModel).Error
 }

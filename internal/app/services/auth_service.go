@@ -19,10 +19,11 @@ type AuthService interface {
 
 type authService struct {
 	userRepository repository.UserRepository
+	roleRepository repository.RoleRepository
 }
 
-func NewAuthService(userRepository repository.UserRepository) AuthService {
-	return &authService{userRepository: userRepository}
+func NewAuthService(userRepository repository.UserRepository, roleRepository repository.RoleRepository) AuthService {
+	return &authService{userRepository: userRepository, roleRepository: roleRepository}
 }
 
 func (s *authService) Register(user *request.RegisterRequest) error {
@@ -50,9 +51,15 @@ func (s *authService) Login(email, password string) (string, error) {
 		return "", errors.New("invalid email or password")
 	}
 
+	role, err := s.roleRepository.GetByID(user.RoleID)
+	if err != nil {
+		return "", errors.New("invalid email or password")
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
+		"role":     role.Name,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 

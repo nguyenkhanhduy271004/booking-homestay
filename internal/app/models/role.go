@@ -8,6 +8,5 @@ type Role struct {
 	gorm.Model
 	Name        string       `json:"name"`
 	Description string       `json:"description"`
-	Staffs      []Staff      `gorm:"foreignKey:RoleID"`
-	Permissions []Permission `gorm:"many2many:role_permissions;"`
+	Permissions []Permission `gorm:"many2many:role_permissions;" json:"permissions"`
 }

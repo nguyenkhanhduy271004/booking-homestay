@@ -42,6 +42,8 @@ func CheckJwt() gin.HandlerFunc {
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			c.Set("user_id", claims["user_id"])
 			c.Set("username", claims["username"])
+			c.Set("role", claims["role"])
+			c.Set("permissions", claims["permissions"])
 			c.Next()
 		} else {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
