@@ -13,17 +13,25 @@ import (
 )
 
 func SetupDatabaseConnection() *gorm.DB {
-	errEnv := godotenv.Load()
-	if errEnv != nil {
+	err := godotenv.Load()
+	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASS")
-	dbHost := os.Getenv("DB_HOST")
-	dbName := os.Getenv("DB_NAME")
+	required := []string{"DB_USER", "DB_PASS", "DB_HOST", "DB_NAME"}
+	for _, key := range required {
+		if os.Getenv(key) == "" {
+			log.Fatalf("Missing required environment variable: %s", key)
+		}
+	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8&parseTime=True&loc=Local", dbUser, dbPass, dbHost, dbName)
+	dsn := fmt.Sprintf(
+		"%s:%s@tcp(%s:3306)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASS"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_NAME"),
+	)
 
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
@@ -35,7 +43,6 @@ func SetupDatabaseConnection() *gorm.DB {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: newLogger,
 	})
-
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
@@ -44,19 +51,38 @@ func SetupDatabaseConnection() *gorm.DB {
 	if err != nil {
 		log.Fatal("Failed to get database instance:", err)
 	}
-
 	if err := sqlDB.Ping(); err != nil {
 		log.Fatal("Failed to ping database:", err)
 	}
 
-	log.Println("Successfully connected to database!")
+	log.Println("Successfully connected to database")
 
-	if err := db.AutoMigrate(&model.User{}, &model.Hotel{}, &model.Role{}, &model.Permission{}, &model.Staff{}, &model.Booking{}, &model.Room{}, &model.Payment{}, &model.Guest{}, &model.RoomType{}); err != nil {
-		log.Fatal("Failed to migrate database:", err)
-	}
-	log.Println("Database migration completed!")
+	migrateModels(db)
 
 	return db
+}
+
+func migrateModels(db *gorm.DB) {
+	models := []interface{}{
+		&model.Permission{},
+		&model.Role{},
+		&model.User{},
+		&model.Hotel{},
+		&model.RoomType{},
+		&model.Room{},
+		&model.Staff{},
+		&model.Guest{},
+		&model.Booking{},
+		&model.Payment{},
+	}
+
+	for _, m := range models {
+		if err := db.AutoMigrate(m); err != nil {
+			log.Fatalf("Failed to migrate model %T: %v", m, err)
+		}
+	}
+
+	log.Println("Database migration completed")
 }
 
 func CloseDatabaseConnection(db *gorm.DB) {
@@ -69,5 +95,5 @@ func CloseDatabaseConnection(db *gorm.DB) {
 		log.Fatal("Failed to close database connection:", err)
 	}
 
-	log.Println("Database connection closed successfully!")
+	log.Println("Database connection closed")
 }

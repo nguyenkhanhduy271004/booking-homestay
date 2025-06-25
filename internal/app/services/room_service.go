@@ -15,6 +15,8 @@ type RoomService interface {
 	GetRoomByID(id uint) (*response.RoomResponse, error)
 	UpdateRoom(id uint, room *request.RoomRequest) error
 	DeleteRoom(id uint) error
+	GetRoomByHotelID(hotelID uint) ([]response.RoomResponse, error)
+	GetRoomTypeByHotelID(hotelID uint) ([]response.RoomTypeResponse, error)
 }
 
 type roomService struct {
@@ -86,4 +88,35 @@ func (s *roomService) DeleteRoom(id uint) error {
 		return errors.New("invalid room ID")
 	}
 	return s.roomRepo.Delete(id)
+}
+
+func (s *roomService) GetRoomByHotelID(hotelID uint) ([]response.RoomResponse, error) {
+	rooms, err := s.roomRepo.GetByHotelID(hotelID)
+	if err != nil {
+		return nil, err
+	}
+
+	roomDTOs := make([]response.RoomResponse, len(rooms))
+	for i, room := range rooms {
+		roomDTOs[i] = converter.ToRoomDTO(&room)
+	}
+	return roomDTOs, nil
+}
+
+func (s *roomService) GetRoomTypeByHotelID(hotelID uint) ([]response.RoomTypeResponse, error) {
+	rooms, err := s.roomRepo.GetByHotelID(hotelID)
+	if err != nil {
+		return nil, err
+	}
+
+	roomTypeMap := make(map[uint]struct{})
+	roomTypes := []response.RoomTypeResponse{}
+	for _, room := range rooms {
+		if _, exists := roomTypeMap[room.TypeID]; !exists && room.TypeID != 0 && room.Type.ID != 0 {
+			roomTypeMap[room.TypeID] = struct{}{}
+			roomTypes = append(roomTypes, converter.ToRoomTypeDTO(&room.Type))
+		}
+	}
+
+	return roomTypes, nil
 }

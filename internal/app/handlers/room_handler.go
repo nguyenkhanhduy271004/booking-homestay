@@ -150,3 +150,57 @@ func (h *RoomHandler) DeleteRoom(c *gin.Context) {
 		"message": "Room deleted successfully",
 	})
 }
+
+func (h *RoomHandler) GetRoomByHotelID(c *gin.Context) {
+	hotelID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid hotel ID",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	rooms, err := h.roomService.GetRoomByHotelID(uint(hotelID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Failed to fetch rooms",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   rooms,
+	})
+}
+
+func (h *RoomHandler) GetRoomTypeByHotelID(c *gin.Context) {
+	hotelID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid hotel ID",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	roomTypes, err := h.roomService.GetRoomTypeByHotelID(uint(hotelID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Failed to fetch room types",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   roomTypes,
+	})
+}

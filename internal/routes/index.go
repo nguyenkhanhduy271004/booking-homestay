@@ -86,6 +86,8 @@ func InitRoute(db *gorm.DB) *gin.Engine {
 		case *handlers.RoomHandler:
 			group.GET("", h.GetAllRooms)
 			group.GET(":id", h.GetRoomByID)
+			group.GET("/hotel/:id", h.GetRoomByHotelID)
+			group.GET("/hotel/:id/room-types", h.GetRoomTypeByHotelID)
 		case *handlers.RoomTypeHandler:
 			group.GET("", h.GetAllRoomTypes)
 			group.GET(":id", h.GetRoomTypeByID)

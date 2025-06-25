@@ -12,5 +12,5 @@ type User struct {
 	Email    string `json:"email" gorm:"unique"`
 	Password string `json:"password"`
 	RoleID   uint   `json:"role_id"`
-	Role     Role   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"role"`
+	Role     Role   `gorm:"foreignKey:RoleID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"role"`
 }

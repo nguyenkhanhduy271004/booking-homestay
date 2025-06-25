@@ -9,7 +9,7 @@ import (
 type Staff struct {
 	gorm.Model
 	UserID      uint      `json:"user_id"`
-	User        User      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"user"`
+	User        User      `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"user"`
 	HotelID     uint      `json:"hotel_id"`
 	Hotel       Hotel     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	FirstName   string    `json:"first_name"`

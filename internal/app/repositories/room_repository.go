@@ -14,6 +14,7 @@ type RoomRepository interface {
 	GetByID(id uint) (*model.Room, error)
 	Update(id uint, room *request.RoomRequest) error
 	Delete(id uint) error
+	GetByHotelID(hotelID uint) ([]model.Room, error)
 }
 
 type roomRepository struct {
@@ -98,4 +99,15 @@ func (r *roomRepository) Delete(id uint) error {
 	}
 
 	return r.db.Delete(&model.Room{}, id).Error
+}
+
+func (r *roomRepository) GetByHotelID(hotelID uint) ([]model.Room, error) {
+	var rooms []model.Room
+	if err := r.db.Preload("Hotel").
+		Preload("Type").
+		Where("hotel_id = ?", hotelID).
+		Find(&rooms).Error; err != nil {
+		return nil, err
+	}
+	return rooms, nil
 }

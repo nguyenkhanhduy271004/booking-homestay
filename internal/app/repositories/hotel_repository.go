@@ -42,7 +42,7 @@ func (r *hotelRepository) GetAll() ([]model.Hotel, error) {
 	var hotels []model.Hotel
 	if err := r.db.Preload("Staffs").
 		Preload("Staffs.User").
-		Preload("Staffs.Role").
+		Preload("Staffs.User.Role").
 		Find(&hotels).Error; err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (r *hotelRepository) GetByID(id uint) (*model.Hotel, error) {
 	var hotel model.Hotel
 	if err := r.db.Preload("Staffs").
 		Preload("Staffs.User").
-		Preload("Staffs.Role").
+		Preload("Staffs.User.Role").
 		First(&hotel, id).Error; err != nil {
 		return nil, err
 	}

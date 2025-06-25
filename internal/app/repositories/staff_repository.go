@@ -61,7 +61,7 @@ func (r *staffRepository) GetAll() ([]model.Staff, error) {
 	var staff []model.Staff
 	if err := r.db.Preload("User").
 		Preload("Hotel").
-		Preload("Role").
+		Preload("User.Role").
 		Find(&staff).Error; err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (r *staffRepository) GetByID(id uint) (*model.Staff, error) {
 	var staff model.Staff
 	if err := r.db.Preload("User").
 		Preload("Hotel").
-		Preload("Role").
+		Preload("User.Role").
 		First(&staff, id).Error; err != nil {
 		return nil, err
 	}
